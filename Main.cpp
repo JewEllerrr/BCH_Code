@@ -1,7 +1,5 @@
 #include "BCH.h"
 
-
-
 int main() 
 {
 	BCH code(15,5);
