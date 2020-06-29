@@ -42,7 +42,18 @@ BCH::BCH(int n, int d)
 
 vector<bool> BCH::coding(vector<bool>m, vector<bool> g)
 {
-	return multiplication(m, g);
+	//cout << deg(g) << " - degree of the generating polynomial (deg(g) = r)" << endl;
+	vector<bool> c = check_sum(m, g);
+	//for (int l = 0; l < c.size(); l++)
+	//	cout << c[l] << ' ';
+	//cout << " - check sum" << endl;
+
+	vector<bool> a = vector_a(m, c);
+	//for (int l = 0; l < a.size(); l++)
+	//	cout << a[l] << ' ';
+	//cout << " - vector a" << endl;
+	return a;
+	//return multiplication(m, g);
 }
 
 vector<bool> BCH::getG()
@@ -53,7 +64,18 @@ vector<bool> BCH::getG()
 vector<bool> BCH::decoding(vector<bool> &vec)
 {
 	vector<vector<bool>> sndrm_cmpnnts = get_components_of_syndrome(vec);
+	cout << "Components of syndrome " << endl;
 	print(sndrm_cmpnnts);
+	int cntr = 0;
+	for (size_t i = 0; i < sndrm_cmpnnts.size(); i++)
+		if (sndrm_cmpnnts[i] != gf[0])
+			cntr++;
+	if (cntr == 0)
+	{
+		cout << "Recieved message accepted without error " << endl << endl;
+		return vec;
+	}
+
 	int v = t;
 	vector<vector<vector<bool>>> M;
 	vector<vector<bool>>tmp;
@@ -67,7 +89,7 @@ vector<bool> BCH::decoding(vector<bool> &vec)
 		for (size_t i = 0; i < v; i++) 
 			for (size_t j = 0; j < v; j++) 
 					M[i][j] = sndrm_cmpnnts[i+j];
-		//print(M);
+		print(M);
 
 		det = determinant(M,v);
 		cout << "Determinant of matrix size " << v << ": ";
@@ -81,7 +103,7 @@ vector<bool> BCH::decoding(vector<bool> &vec)
 		if (det != gf[0]) break;
 		v--;
 	}
-	cout << "Number of errors in the received word: " << v << endl << endl;
+	cout << "Number of errors in the received word >= " << v << endl << endl;
 	cout << "Matrix M:" << endl;
 	print(M);
 
@@ -165,6 +187,13 @@ vector<bool> BCH::decoding(vector<bool> &vec)
 		if (gf[0] == is_res_invers)
 			res_invers.push_back(gf[i]);
 	}
+	if (res_invers.size() < M.size())
+	{
+		cout << "Decoding denial, number of errors in the received word > "<< t << endl;
+		exit(0);
+	}
+
+	
 
 	// Getting error locators
 	vector<vector<bool>>error_locators;
@@ -172,20 +201,27 @@ vector<bool> BCH::decoding(vector<bool> &vec)
 		error_locators.push_back(inverse_element(gf[1], res_invers[i]));
 	//print(error_locators);
 
-	// RESULT!!!
+	// Error polynom
 	vector<int> result;
-	cout << "e(x) = ";
 	for (size_t i = 0; i < error_locators.size(); i++)
 	{
 		it = find(gf.begin(), gf.end(), error_locators[i]);
 		index = it - gf.begin() - 1; //power alpha
 		result.push_back(index);
+	}
+	cout << "Vector e(x) = ";
+	sort(result.begin(), result.end());
+	reverse(result.begin(), result.end());
+	for (size_t i = 0; i < result.size(); i++)
+	{
 		cout << "x^" << result[i];
-		if (i != error_locators.size() - 1)
+		if (i != result.size() - 1)
 			cout << " + ";
 		else cout << endl;
 	}
+	cout << endl;
 
+	// Result
 	reverse(vec.begin(), vec.end());
 	for (size_t i = 0; i < result.size(); i++)
 	{
@@ -335,6 +371,10 @@ vector<bool> BCH::multiplication(vector<bool> a, vector<bool> b)
 
 vector<bool> BCH::sub_multiply(vector<bool> a, vector<bool> b)
 {
+	if (a == gf[0] || b == gf[0])
+	{
+		return gf[0];
+	}
 	vector<vector<bool>>::iterator it = find(gf.begin(), gf.end(), a);
 	int index = it - gf.begin() - 1; //power alpha
 	it = find(gf.begin(), gf.end(), b);
@@ -368,15 +408,19 @@ vector<vector<bool>> BCH::get_components_of_syndrome(vector<bool> b)
 {
 	vector<vector<int>> sub_res;
 	vector<int>tmp;
-	// i - alphas from 1 to 2t
+	// i - alphas from 1 to 2t	
 	for (size_t i = 1; i <= 2 * t; i++)
 	{
 		tmp.clear();
-		for (size_t j = 0; j < b.size(); j++)
-			if (b[j] == 1) tmp.push_back(((b.size() - 1 - j) * i) % n);
+		for (size_t j = 0; j < b.size(); j++) 
+		{
+			if (b[j] == 1) 
+				tmp.push_back(((b.size() - 1 - j) * i) % n);
+		}
 		sub_res.push_back(tmp);
 	}
-	//print(sub_res);
+	print(sub_res);
+
 	vector<vector<bool>> res;
 	for (size_t i = 0; i < sub_res.size(); i++)
 	{
@@ -410,27 +454,26 @@ vector<bool> BCH::determinant(vector<vector<vector<bool>>> &mas, int m) {
 	for (i = 0; i < m; i++)
 		p[i] = tmp;
 	j = 0; 
-	vector<bool> d, k;
-	//k = 1; // (-1) in degree i
+	vector<bool> d = gf[0];
 	n = m - 1;
 	if (m < 1) cout << "The determinant is impossible to calculate!";
 	if (m == 1) {
 		d = mas[0][0];
 		return(d);
 	}
-	if (m == 2) {
-		//d = mas[0][0] * mas[1][1] - (mas[1][0] * mas[0][1]);
-		d = sub_xor(sub_multiply(mas[0][0], mas[1][1]), sub_multiply(mas[1][0], mas[0][1]));
-		return(d);
-	}
-	if (m > 2) {
+	//if (m == 2) {
+	//	//d = mas[0][0] * mas[1][1] - (mas[1][0] * mas[0][1]);
+	//	d = sub_xor(sub_multiply(mas[0][0], mas[1][1]), sub_multiply(mas[1][0], mas[0][1]));
+	//	return(d);
+	//}
+	//if (m > 2) {
 		for (i = 0; i < m; i++) {
 			GetMatr(mas, p, i, 0, m);
 			//d = d + mas[i][0] * Determinant(p, n);
 			d = sub_xor(d, sub_multiply(mas[i][0], determinant(p, n)));
-			//k = -k;
+
 		}
-	}
+	//}
 	return(d);
 }
 
@@ -532,6 +575,14 @@ vector<bool> sindrom(vector<bool> b, vector<bool> g)
 	return division(b, g);
 }
 
+vector<bool> vector_a(vector<bool> m, vector<bool> c)
+{
+	for (int i = 0; i < c.size(); i++)
+		m.push_back(c[i]);
+
+	return m;
+}
+
 vector<bool> vector_b(vector<bool> a, vector<bool> e)
 {
 	if (e.size() > a.size())
@@ -541,6 +592,26 @@ vector<bool> vector_b(vector<bool> a, vector<bool> e)
 	for (int i = 0; i < a.size(); i++)
 		a[i] = a[i] ^ e[i];
 	return a;
+}
+
+vector<bool> check_sum(vector<bool> m, vector<bool> g)
+{
+	vector<bool> c = m;
+	vector<bool> res;
+
+	for (int i = 0; i < deg(g); i++)
+		c.push_back(0);
+
+	c = division(c, g);
+
+	// the size of the vector c must be equal to deg(g) 
+	// for example if result of division 01 but deg(g) = 4, then next code make it to 0001)
+	for (int i = 0; i < deg(g); i++)
+		res.push_back(c[c.size() - i - 1]);
+
+	reverse(res.begin(), res.end());
+
+	return res;
 }
 
 /* output foo */
