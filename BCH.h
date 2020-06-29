@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <math.h>
+#include <algorithm>
 
 using namespace std;
 
@@ -36,7 +37,9 @@ vector<bool> sindrom(vector<bool> b, vector<bool> g);
 vector<bool> division(vector<bool> v, vector<bool> h);
 int vector_weight(vector<bool> v);
 int deg(vector<bool> v);
+vector<bool> vector_a(vector<bool> m, vector<bool> c);
 vector<bool> vector_b(vector<bool> a, vector<bool> e);
+vector<bool> check_sum(vector<bool> m, vector<bool> g);
 
 void print(vector<vector<vector<bool>>> v);
 void print(vector<vector<int>> v);
