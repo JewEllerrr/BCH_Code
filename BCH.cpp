@@ -64,7 +64,7 @@ vector<bool> BCH::getG()
 vector<bool> BCH::decoding(vector<bool> &vec)
 {
 	vector<vector<bool>> sndrm_cmpnnts = get_components_of_syndrome(vec);
-	cout << "Components of syndrome " << endl;
+	cout << "Components of syndrome:" << endl;
 	print(sndrm_cmpnnts);
 	int cntr = 0;
 	for (size_t i = 0; i < sndrm_cmpnnts.size(); i++)
@@ -86,19 +86,20 @@ vector<bool> BCH::decoding(vector<bool> &vec)
 		for (size_t i = 0; i < v; i++)
 			M[i] = tmp;
 
-		for (size_t i = 0; i < v; i++) 
-			for (size_t j = 0; j < v; j++) 
-					M[i][j] = sndrm_cmpnnts[i+j];
+		for (size_t i = 0; i < v; i++)
+			for (size_t j = 0; j < v; j++)
+				M[i][j] = sndrm_cmpnnts[i + j];
+		cout << "Matrix component of the syndrome:" << endl;
 		print(M);
 
 		det = determinant(M,v);
 		cout << "Determinant of matrix size " << v << ": ";
-		if (det == gf[0]) cout << "0" << endl;
+		if (det == gf[0]) cout << "0" << endl << endl;
 		else
 		{
 			vector<vector<bool>>::iterator it = find(gf.begin(), gf.end(), det);
 			int index = it - gf.begin() - 1;//power alpha
-			cout << "alpha^" << index << endl;
+			cout << "alpha^" << index << endl << endl;
 		}
 		if (det != gf[0]) break;
 		v--;
@@ -189,11 +190,10 @@ vector<bool> BCH::decoding(vector<bool> &vec)
 	}
 	if (res_invers.size() < M.size())
 	{
+		cout << endl;
 		cout << "Decoding denial, number of errors in the received word > "<< t << endl;
 		exit(0);
 	}
-
-	
 
 	// Getting error locators
 	vector<vector<bool>>error_locators;
@@ -419,6 +419,7 @@ vector<vector<bool>> BCH::get_components_of_syndrome(vector<bool> b)
 		}
 		sub_res.push_back(tmp);
 	}
+	cout << "In-between calculations components of syndrome:" << endl;
 	print(sub_res);
 
 	vector<vector<bool>> res;
@@ -430,17 +431,6 @@ vector<vector<bool>> BCH::get_components_of_syndrome(vector<bool> b)
 
 		res.push_back(tmp_bool);
 	}
-	//print(res);
-	//vector<int> res_int;
-	//vector<vector<bool>>::iterator it;
-	//int index;
-	//for (size_t i = 0; i < res.size(); i++)
-	//{
-	//	it = find(gf.begin(), gf.end(), res[i]);
-	//	index = it - gf.begin() - 1;//power alpha
-	//	res_int.push_back(index);
-	//}
-	//print(res_int);
 
 	return res;
 }
@@ -664,7 +654,7 @@ void print(vector<vector<vector<bool>>> v)
 		}
 		cout << endl;
 	}
-	cout << endl;
+	//cout << endl;
 }
 
 void printGF(vector<vector<bool>> gf, int m)
